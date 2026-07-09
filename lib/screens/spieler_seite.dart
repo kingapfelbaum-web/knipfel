@@ -221,7 +221,7 @@ class _SpielerSeiteState extends State<SpielerSeite>
         'spieler': profile.map((p) => p.toJson()).toList(),
         'spiele': spiele.map((s) => s.toJson()).toList(),
       });
-      final dir = await getApplicationDocumentsDirectory();
+      final dir = (await getExternalStorageDirectory())!;
       final dateiname =
           'kniffel_export_${DateTime.now().millisecondsSinceEpoch}.json';
       final file = File('${dir.path}/$dateiname');
@@ -241,7 +241,7 @@ class _SpielerSeiteState extends State<SpielerSeite>
 
   Future<void> _importieren() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
+      final dir = (await getExternalStorageDirectory())!;
 
       // Alle JSON-Dateien im Ordner finden
       final dateien = dir
