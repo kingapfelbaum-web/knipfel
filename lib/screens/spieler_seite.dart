@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/spieler_profil.dart';
 import '../models/spiel.dart';
 import 'statistik_seite.dart';
 import 'spielblock_seite.dart';
-import 'dart:math';
+import 'dart:convert';
+import 'dart:io';
 
 class SpielerSeite extends StatefulWidget {
   const SpielerSeite({super.key});
@@ -17,6 +20,8 @@ class _SpielerSeiteState extends State<SpielerSeite>
   List<SpielerProfil> profile = [];
   List<Spiel> spiele = [];
   late TabController _tabController;
+  String _spielerSuche = '';
+  String _spieleSuche = '';
 
   @override
   void initState() {
@@ -110,13 +115,13 @@ class _SpielerSeiteState extends State<SpielerSeite>
             autofocus: true,
             maxLength: 12,
             decoration: InputDecoration(
-              hintText: 'Name',
+              hintText: 'Neuer Name',
               counterText: '',
               errorText: controller.text.length == 12
                   ? 'Maximale Länge erreicht'
                   : null,
             ),
-            onChanged: (_) => setDialogState(() {}), // StatefulBuilder nötig – siehe unten
+            onChanged: (_) => setDialogState(() {}),
           ),
           actions: [
             TextButton(
@@ -174,10 +179,6 @@ class _SpielerSeiteState extends State<SpielerSeite>
         builder: (_) => SpielblockSeite(
           spiel: spiel,
           onChanged: () async {
-            if (spiel.spieler.isNotEmpty &&
-                spiel.spieler.every((s) => s.istFertig)) {
-              spiel.beendet = true;
-            }
             await alleSpieleSpeichern(spiele);
             setState(() {});
           },
@@ -213,12 +214,186 @@ class _SpielerSeiteState extends State<SpielerSeite>
     );
   }
 
+  // ── Export / Import ─────────────────────────────────────
+  Future<void> _exportieren() async {
+    try {
+      final data = jsonEncode({
+        'spieler': profile.map((p) => p.toJson()).toList(),
+        'spiele': spiele.map((s) => s.toJson()).toList(),
+      });
+      final dir = await getApplicationDocumentsDirectory();
+      final dateiname =
+          'kniffel_export_${DateTime.now().millisecondsSinceEpoch}.json';
+      final file = File('${dir.path}/$dateiname');
+      await file.writeAsString(data);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Kniffel Export',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fehler beim Export: $e')),
+      );
+    }
+  }
+
+  Future<void> _importieren() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+
+      // Alle JSON-Dateien im Ordner finden
+      final dateien = dir
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.json'))
+          .toList()
+        ..sort((a, b) => b.lastModifiedSync()
+            .compareTo(a.lastModifiedSync())); // neueste zuerst
+
+      if (!mounted) return;
+
+      if (dateien.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Keine JSON-Dateien gefunden. Bitte Export-Datei in den Dokumenten-Ordner legen.')),
+        );
+        return;
+      }
+
+      // Datei auswählen
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Datei auswählen'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: dateien.length,
+              itemBuilder: (context, index) {
+                final datei = dateien[index];
+                final name = datei.path.split('/').last;
+                return ListTile(
+                  leading: const Icon(Icons.file_present),
+                  title: Text(name, style: const TextStyle(fontSize: 13)),
+                  subtitle: Text(
+                    datei.lastModifiedSync().toString().substring(0, 16),
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _importiereDatei(datei);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Abbrechen')),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fehler: $e')),
+      );
+    }
+  }
+
+  Future<void> _importiereDatei(File datei) async {
+    try {
+      final inhalt = await datei.readAsString();
+      final data = jsonDecode(inhalt);
+
+      final neueProfile = (data['spieler'] as List)
+          .map((e) => SpielerProfil.fromJson(e))
+          .toList();
+      final neueSpiele =
+      (data['spiele'] as List).map((e) => Spiel.fromJson(e)).toList();
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Import'),
+          content: Text(
+              '${neueProfile.length} Spieler und ${neueSpiele.length} Spiele gefunden.\n\nWie soll importiert werden?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Abbrechen')),
+            OutlinedButton(
+              onPressed: () async {
+                for (final p in neueProfile) {
+                  if (!profile.any((e) => e.id == p.id)) profile.add(p);
+                }
+                for (final s in neueSpiele) {
+                  if (!spiele.any((e) => e.id == s.id)) spiele.add(s);
+                }
+                await alleProfileSpeichern(profile);
+                await alleSpieleSpeichern(spiele);
+                setState(() {});
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Erfolgreich zusammengeführt')),
+                );
+              },
+              child: const Text('Zusammenführen'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                profile
+                  ..clear()
+                  ..addAll(neueProfile);
+                spiele
+                  ..clear()
+                  ..addAll(neueSpiele);
+                await alleProfileSpeichern(profile);
+                await alleSpieleSpeichern(spiele);
+                setState(() {});
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Erfolgreich importiert')),
+                );
+              },
+              child: const Text('Überschreiben'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fehler beim Import: $e')),
+      );
+    }
+  }
+
   // ── UI ──────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('📊 Statistiken'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            tooltip: 'Exportieren',
+            onPressed: _exportieren,
+          ),
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: 'Importieren',
+            onPressed: _importieren,
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -248,140 +423,199 @@ class _SpielerSeiteState extends State<SpielerSeite>
   }
 
   Widget _spielerListe() {
-    if (profile.isEmpty) {
-      return const Center(child: Text('Noch keine Spieler angelegt.'));
-    }
-    return ListView.builder(
-      itemCount: profile.length,
-      itemBuilder: (context, index) {
-        final p = profile[index];
-        final siege = _siege(p);
-        final spielAnzahl = _anzahlSpiele(p);
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: Colors.green.shade200,
-            child: Text(p.name[0].toUpperCase(),
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+    final gefiltert = profile
+        .where((p) =>
+        p.name.toLowerCase().contains(_spielerSuche.toLowerCase()))
+        .toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Spieler suchen...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (val) => setState(() => _spielerSuche = val),
           ),
-          title: Text(p.name,
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('$spielAnzahl Spiele · $siege Siege'),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.bar_chart),
-                tooltip: 'Statistik',
-                onPressed: spielAnzahl == 0
-                    ? null
-                    : () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => StatistikSeite(
-                      profil: p,
-                      spiele: spiele,
-                    ),
-                  ),
+        ),
+        Expanded(
+          child: gefiltert.isEmpty
+              ? const Center(child: Text('Keine Spieler gefunden.'))
+              : ListView.builder(
+            padding: const EdgeInsets.only(bottom: 80),
+            itemCount: gefiltert.length,
+            itemBuilder: (context, index) {
+              final p = gefiltert[index];
+              final siege = _siege(p);
+              final spielAnzahl = _anzahlSpiele(p);
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.green.shade200,
+                  child: Text(p.name[0].toUpperCase(),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold)),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                tooltip: 'Umbenennen',
-                onPressed: () => _profilUmbenennen(p),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                tooltip: 'Löschen',
-                onPressed: () => _profilLoeschen(p),
-              ),
-            ],
+                title: Text(p.name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold)),
+                subtitle:
+                Text('$spielAnzahl Spiele · $siege Siege'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.bar_chart),
+                      tooltip: 'Statistik',
+                      onPressed: spielAnzahl == 0
+                          ? null
+                          : () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => StatistikSeite(
+                            profil: p,
+                            spiele: spiele,
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      tooltip: 'Umbenennen',
+                      onPressed: () => _profilUmbenennen(p),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Löschen',
+                      onPressed: () => _profilLoeschen(p),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        );
-      },
-      // Ganz am Ende der ListView in beiden Methoden:
-      padding: const EdgeInsets.only(bottom: 80),
+        ),
+      ],
     );
   }
 
   Widget _spieleListe() {
     final beendeteSpiele = spiele.where((s) => s.beendet).toList();
-    if (beendeteSpiele.isEmpty) {
-      return const Center(child: Text('Noch keine abgeschlossenen Spiele.'));
-    }
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.85,
-      ),
-      itemCount: beendeteSpiele.length,
-      itemBuilder: (context, index) {
-        final spiel = beendeteSpiele[index];
-        return GestureDetector(
-          onTap: () => _spielOeffnen(spiel),
-          onLongPress: () => _spielLoeschen(spiel),
-          child: Card(
-            elevation: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text('✅ Beendet',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.green.shade800)),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(spiel.name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${spiel.erstelltAm.day}.${spiel.erstelltAm.month}.${spiel.erstelltAm.year}',
-                    style: const TextStyle(
-                        fontSize: 11, color: Colors.grey),
-                  ),
-                  const Divider(height: 16),
-                  Expanded(
+    final gefiltert = beendeteSpiele
+        .where((s) =>
+    s.name.toLowerCase().contains(_spieleSuche.toLowerCase()) ||
+        s.spieler.any((sp) => sp.name
+            .toLowerCase()
+            .contains(_spieleSuche.toLowerCase())))
+        .toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Spiel oder Spieler suchen...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (val) => setState(() => _spieleSuche = val),
+          ),
+        ),
+        Expanded(
+          child: gefiltert.isEmpty
+              ? const Center(
+              child: Text('Keine abgeschlossenen Spiele gefunden.'))
+              : GridView.builder(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 80),
+            gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.85,
+            ),
+            itemCount: gefiltert.length,
+            itemBuilder: (context, index) {
+              final spiel = gefiltert[index];
+              return GestureDetector(
+                onTap: () => _spielOeffnen(spiel),
+                onLongPress: () => _spielLoeschen(spiel),
+                child: Card(
+                  elevation: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: spiel.rangliste.take(4).toList()
-                          .asMap()
-                          .entries
-                          .map((e) => Text(
-                        '${e.key == 0 ? "🥇" : e.key == 1 ? "🥈" : e.key == 2 ? "🥉" : "🥴"} ${e.value.name}: ${e.value.gesamt}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: e.key == 0
-                              ? FontWeight.bold
-                              : FontWeight.normal,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text('✅ Beendet',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.green.shade800)),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ))
-                          .toList(),
+                        const SizedBox(height: 8),
+                        Text(spiel.name,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13)),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${spiel.erstelltAm.day}.${spiel.erstelltAm.month}.${spiel.erstelltAm.year}',
+                          style: const TextStyle(
+                              fontSize: 11, color: Colors.grey),
+                        ),
+                        const Divider(height: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            children: [
+                              ...spiel.rangliste
+                                  .take(4)
+                                  .toList()
+                                  .asMap()
+                                  .entries
+                                  .map((e) => Text(
+                                '${e.key == 0 ? "🥇" : e.key == 1 ? "🥈" : e.key == 2 ? "🥉" : "🏅"} ${e.value.name}: ${e.value.gesamt}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: e.key == 0
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                                overflow:
+                                TextOverflow.ellipsis,
+                              )),
+                              if (spiel.rangliste.length > 4)
+                                Text(
+                                  '+ ${spiel.rangliste.length - 4} weitere',
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  if (spiel.rangliste.length > 4)
-                    Text(
-                      '+ ${spiel.rangliste.length - 4} weitere',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }
