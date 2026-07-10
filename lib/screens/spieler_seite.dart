@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
 import '../models/spieler_profil.dart';
 import '../models/spiel.dart';
 import 'statistik_seite.dart';
 import 'spielblock_seite.dart';
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/services.dart';
 
 class SpielerSeite extends StatefulWidget {
   const SpielerSeite({super.key});
@@ -216,20 +214,225 @@ class _SpielerSeiteState extends State<SpielerSeite>
 
   // ── Export / Import ─────────────────────────────────────
   Future<void> _exportieren() async {
-    try {
-      final data = jsonEncode({
-        'spieler': profile.map((p) => p.toJson()).toList(),
-        'spiele': spiele.map((s) => s.toJson()).toList(),
-      });
-      final dir = (await getExternalStorageDirectory())!;
-      final dateiname =
-          'kniffel_export_${DateTime.now().millisecondsSinceEpoch}.json';
-      final file = File('${dir.path}/$dateiname');
-      await file.writeAsString(data);
+    Set<String> ausgewaehlteProfile = {};
+    Set<String> ausgewaehlteSpiele = {};
 
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Kniffel Export',
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Titel
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Export',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Spieler auswählen
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Spieler:',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13)),
+                  TextButton(
+                    onPressed: () => setDialogState(() {
+                      if (ausgewaehlteProfile.length == profile.length) {
+                        ausgewaehlteProfile.clear();
+                      } else {
+                        ausgewaehlteProfile =
+                            profile.map((p) => p.id).toSet();
+                      }
+                    }),
+                    child: Text(
+                        ausgewaehlteProfile.length == profile.length
+                            ? 'Alle abwählen'
+                            : 'Alle auswählen'),
+                  ),
+                ],
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 150),
+                child: SingleChildScrollView(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: profile
+                          .map((p) => CheckboxListTile(
+                        dense: true,
+                        value: ausgewaehlteProfile.contains(p.id),
+                        onChanged: (val) => setDialogState(() {
+                          if (val == true) {
+                            ausgewaehlteProfile.add(p.id);
+                          } else {
+                            ausgewaehlteProfile.remove(p.id);
+                          }
+                        }),
+                        secondary: CircleAvatar(
+                          radius: 14,
+                          backgroundColor: Colors.green.shade100,
+                          child: Text(p.name[0].toUpperCase(),
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                        title: Text(p.name),
+                      ))
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Spiele auswählen
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Alte Spiele:',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13)),
+                  TextButton(
+                    onPressed: () => setDialogState(() {
+                      final beendete =
+                      spiele.where((s) => s.beendet).toList();
+                      if (ausgewaehlteSpiele.length == beendete.length) {
+                        ausgewaehlteSpiele.clear();
+                      } else {
+                        ausgewaehlteSpiele =
+                            beendete.map((s) => s.id).toSet();
+                      }
+                    }),
+                    child: Text(
+                        ausgewaehlteSpiele.length ==
+                            spiele.where((s) => s.beendet).length
+                            ? 'Alle abwählen'
+                            : 'Alle auswählen'),
+                  ),
+                ],
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 150),
+                child: SingleChildScrollView(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: spiele
+                          .where((s) => s.beendet)
+                          .map((s) => CheckboxListTile(
+                        dense: true,
+                        value: ausgewaehlteSpiele.contains(s.id),
+                        onChanged: (val) => setDialogState(() {
+                          if (val == true) {
+                            ausgewaehlteSpiele.add(s.id);
+                          } else {
+                            ausgewaehlteSpiele.remove(s.id);
+                          }
+                        }),
+                        title: Text(s.name,
+                            style: const TextStyle(fontSize: 13)),
+                        subtitle: Text(
+                          '${s.erstelltAm.day}.${s.erstelltAm.month}.${s.erstelltAm.year} · ${s.rangliste.isNotEmpty ? "🥇 ${s.rangliste.first.name}" : ""}',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                      ))
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Export-Button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    '${ausgewaehlteProfile.length} Spieler, ${ausgewaehlteSpiele.length} Spiele',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: (ausgewaehlteProfile.isEmpty &&
+                        ausgewaehlteSpiele.isEmpty)
+                        ? null
+                        : () async {
+                      Navigator.pop(context);
+                      await _exportiereAuswahl(
+                        ausgewaehlteProfile,
+                        ausgewaehlteSpiele,
+                      );
+                    },
+                    icon: const Icon(Icons.upload_file),
+                    label: const Text('Exportieren'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportiereAuswahl(
+      Set<String> profilIds,
+      Set<String> spielIds,
+      ) async {
+    try {
+      final ausgewaehlteProfile =
+      profile.where((p) => profilIds.contains(p.id)).toList();
+      final ausgewaehlteSpiele =
+      spiele.where((s) => spielIds.contains(s.id)).toList();
+
+      final data = jsonEncode({
+        'spieler': ausgewaehlteProfile.map((p) => p.toJson()).toList(),
+        'spiele': ausgewaehlteSpiele.map((s) => s.toJson()).toList(),
+      });
+
+      await Clipboard.setData(ClipboardData(text: data));
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '✅ ${ausgewaehlteProfile.length} Spieler und '
+                '${ausgewaehlteSpiele.length} Spiele in Zwischenablage kopiert',
+          ),
+          duration: const Duration(seconds: 3),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -240,77 +443,196 @@ class _SpielerSeiteState extends State<SpielerSeite>
   }
 
   Future<void> _importieren() async {
-    try {
-      final dir = (await getExternalStorageDirectory())!;
+    final controller = TextEditingController();
 
-      // Alle JSON-Dateien im Ordner finden
-      final dateien = dir
-          .listSync()
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.json'))
-          .toList()
-        ..sort((a, b) => b.lastModifiedSync()
-            .compareTo(a.lastModifiedSync())); // neueste zuerst
-
-      if (!mounted) return;
-
-      if (dateien.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Keine JSON-Dateien gefunden. Bitte Export-Datei in den Dokumenten-Ordner legen.')),
-        );
-        return;
+    // Zwischenablage prüfen ob gültiger Kniffel-Export
+    final clip = await Clipboard.getData(Clipboard.kTextPlain);
+    bool istGueltig = false;
+    if (clip?.text != null) {
+      try {
+        final data = jsonDecode(clip!.text!);
+        istGueltig = data is Map &&
+            data.containsKey('spieler') &&
+            data.containsKey('spiele');
+      } catch (_) {
+        istGueltig = false;
       }
-
-      // Datei auswählen
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Datei auswählen'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: dateien.length,
-              itemBuilder: (context, index) {
-                final datei = dateien[index];
-                final name = datei.path.split('/').last;
-                return ListTile(
-                  leading: const Icon(Icons.file_present),
-                  title: Text(name, style: const TextStyle(fontSize: 13)),
-                  subtitle: Text(
-                    datei.lastModifiedSync().toString().substring(0, 16),
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _importiereDatei(datei);
-                  },
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Abbrechen')),
-          ],
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fehler: $e')),
-      );
+      if (istGueltig) controller.text = clip!.text!;
     }
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Import',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Hinweis ob gültiger Export erkannt
+              if (istGueltig)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.check_circle,
+                          color: Colors.green, size: 18),
+                      SizedBox(width: 8),
+                      Text('Gültiger Kniffel-Export erkannt',
+                          style: TextStyle(color: Colors.green)),
+                    ],
+                  ),
+                )
+              else if (clip?.text != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.warning_amber,
+                          color: Colors.orange, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Zwischenablage enthält keinen gültigen Export',
+                          style: TextStyle(color: Colors.orange),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline,
+                          color: Colors.grey, size: 18),
+                      SizedBox(width: 8),
+                      Text('Zwischenablage ist leer',
+                          style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 12),
+              const Text(
+                'Exportierten Text hier einfügen:',
+                style:
+                TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: 'Hier einfügen...',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.paste),
+                    tooltip: 'Aus Zwischenablage einfügen',
+                    onPressed: () async {
+                      final clip =
+                      await Clipboard.getData(Clipboard.kTextPlain);
+                      if (clip?.text != null) {
+                        setDialogState(() {
+                          controller.text = clip!.text!;
+                          // Gültigkeit neu prüfen
+                          try {
+                            final data = jsonDecode(clip.text!);
+                            istGueltig = data is Map &&
+                                data.containsKey('spieler') &&
+                                data.containsKey('spiele');
+                          } catch (_) {
+                            istGueltig = false;
+                          }
+                        });
+                      }
+                    },
+                  ),
+                ),
+                onChanged: (_) => setDialogState(() {
+                  // Gültigkeit bei manueller Eingabe prüfen
+                  try {
+                    final data = jsonDecode(controller.text);
+                    istGueltig = data is Map &&
+                        data.containsKey('spieler') &&
+                        data.containsKey('spiele');
+                  } catch (_) {
+                    istGueltig = false;
+                  }
+                }),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: controller.text.trim().isEmpty || !istGueltig
+                        ? null
+                        : () {
+                      Navigator.pop(context);
+                      _verarbeiteImport(controller.text.trim());
+                    },
+                    icon: const Icon(Icons.download),
+                    label: const Text('Importieren'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  Future<void> _importiereDatei(File datei) async {
+  Future<void> _verarbeiteImport(String text) async {
     try {
-      final inhalt = await datei.readAsString();
-      final data = jsonDecode(inhalt);
-
+      final data = jsonDecode(text);
       final neueProfile = (data['spieler'] as List)
           .map((e) => SpielerProfil.fromJson(e))
           .toList();
@@ -342,7 +664,8 @@ class _SpielerSeiteState extends State<SpielerSeite>
                 setState(() {});
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Erfolgreich zusammengeführt')),
+                  const SnackBar(
+                      content: Text('Erfolgreich zusammengeführt')),
                 );
               },
               child: const Text('Zusammenführen'),
@@ -371,7 +694,9 @@ class _SpielerSeiteState extends State<SpielerSeite>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fehler beim Import: $e')),
+        const SnackBar(
+            content: Text(
+                'Fehler: Kein gültiger Kniffel-Export')),
       );
     }
   }
