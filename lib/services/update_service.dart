@@ -17,8 +17,8 @@ class UpdateInfo {
 }
 
 class UpdateService {
-  static const String _githubUser = 'DEIN_USERNAME';
-  static const String _githubRepo = 'DEIN_REPO';
+  static const String _githubUser = 'kingapfelbaum-web';
+  static const String _githubRepo = 'knipfel';
   static const String _ignoriertKey = 'ignorierte_version';
 
   static Future<UpdateInfo?> pruefeAufUpdate() async {
