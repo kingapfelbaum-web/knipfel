@@ -412,10 +412,21 @@ class _SpielerSeiteState extends State<SpielerSeite>
       Set<String> spielIds,
       ) async {
     try {
-      final ausgewaehlteProfile =
-      profile.where((p) => profilIds.contains(p.id)).toList();
       final ausgewaehlteSpiele =
       spiele.where((s) => spielIds.contains(s.id)).toList();
+
+      // Spieler aus ausgewählten Spielen automatisch hinzufügen
+      final alleProfilIds = {...profilIds};
+      for (final spiel in ausgewaehlteSpiele) {
+        for (final spieler in spiel.spieler) {
+          if (spieler.profilId != null) {
+            alleProfilIds.add(spieler.profilId!);
+          }
+        }
+      }
+
+      final ausgewaehlteProfile =
+      profile.where((p) => alleProfilIds.contains(p.id)).toList();
 
       final data = jsonEncode({
         'spieler': ausgewaehlteProfile.map((p) => p.toJson()).toList(),
