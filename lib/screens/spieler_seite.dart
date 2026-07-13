@@ -745,16 +745,6 @@ class _SpielerSeiteState extends State<SpielerSeite>
           _spieleListe(),
         ],
       ),
-      floatingActionButton: ListenableBuilder(
-        listenable: _tabController,
-        builder: (context, _) => _tabController.index == 0
-            ? FloatingActionButton.extended(
-          onPressed: _profilHinzufuegen,
-          icon: const Icon(Icons.person_add),
-          label: const Text('Spieler'),
-        )
-            : const SizedBox.shrink(),
-      ),
     );
   }
 
