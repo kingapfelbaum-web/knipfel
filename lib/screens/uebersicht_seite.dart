@@ -323,7 +323,7 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🎲 Knipfel'),
+        title: null,
       ),
       body: spiele.where((s) => !s.beendet).isEmpty
           ? const Center(
