@@ -340,7 +340,6 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
         itemBuilder: (context, index) {
           final laufendeSpiele = spiele.where((s) => !s.beendet).toList();
           final spiel = laufendeSpiele[index];
-          final gewinner = spiel.gewinner;
           return GestureDetector(
             onTap: () => _spielOeffnen(spiel),
             onLongPress: () => _spielLoeschen(spiel),

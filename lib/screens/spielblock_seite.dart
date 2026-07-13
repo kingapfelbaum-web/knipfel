@@ -129,69 +129,6 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
     );
   }
 
-  void _punkteEintragen(Spieler spieler, String kategorie, List<int> werte) {
-    if (widget.spiel.beendet) return;
-    _zeigeDropdownDialog(spieler, kategorie, werte);
-  }
-
-  void _zeigeDropdownDialog(Spieler spieler, String kategorie, List<int> werte) {
-    int? ausgewaehlt = spieler.punkte[kategorie];
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(kategorie),
-          content: DropdownButton<int>(
-            value: ausgewaehlt,
-            isExpanded: true,
-            hint: const Text('Punkte auswählen'),
-            items: werte
-                .map((w) =>
-                DropdownMenuItem(value: w, child: Text('$w Punkte')))
-                .toList(),
-            onChanged: (val) => setDialogState(() => ausgewaehlt = val),
-          ),
-          actions: [
-            if (spieler.punkte[kategorie] != null)
-              TextButton(
-                onPressed: () {
-                  _eintragenUndWechseln(spieler, kategorie, 0);
-                  Navigator.pop(context);
-                },
-                child: const Text('Löschen',
-                    style: TextStyle(color: Colors.red)),
-              ),
-            ElevatedButton.icon(
-              onPressed: ausgewaehlt != null ? () {
-                _eintragenUndWechseln(spieler, kategorie, ausgewaehlt!);
-                Navigator.pop(context);
-              } : null,
-              icon: const Icon(Icons.close),
-              label: const Text('Streichen (0)'),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade100),
-            ),
-            ElevatedButton.icon(
-              onPressed: ausgewaehlt != null
-                  ? () {
-                setState(
-                        () => spieler.punkte[kategorie] = ausgewaehlt);
-                widget.onChanged();
-                Navigator.pop(context);
-                _zumNaechstenSpieler();
-              }
-                  : null,
-              icon: const Icon(Icons.check),
-              label: const Text('OK'),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade100),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _spielerVerwalten() async {
     final profile = await alleProfileLaden();
     if (!mounted) return;
@@ -403,51 +340,8 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
     });
   }
 
-  void _zeigePaschDialog(Spieler spieler, String kategorie) {
-    final werte = _paschWerte(kategorie);
-    int? ausgewaehlt = spieler.punkte[kategorie];
-    // Stelle sicher dass der aktuelle Wert in der Liste ist
-    if (ausgewaehlt != null && ausgewaehlt == 0) ausgewaehlt = null;
-
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(kategorie),
-          content: DropdownButton<int>(
-            value: ausgewaehlt,
-            isExpanded: true,
-            hint: const Text('Augensumme auswählen'),
-            items: werte
-                .map((w) =>
-                DropdownMenuItem(value: w, child: Text('$w Punkte')))
-                .toList(),
-            onChanged: (val) => setDialogState(() => ausgewaehlt = val),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Abbrechen')),
-            ElevatedButton(
-              onPressed: ausgewaehlt != null
-                  ? () {
-                setState(() => spieler.punkte[kategorie] = ausgewaehlt);
-                widget.onChanged();
-                Navigator.pop(context);
-                _zumNaechstenSpieler();
-              }
-                  : null,
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _zeigeKniffelDialog(Spieler spieler) {
     final aktuell = spieler.punkte['Kniffel'];
-    final istErsterEintrag = aktuell == null;
 
     showDialog(
       context: context,
@@ -699,13 +593,6 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
         ),
       ],
     );
-  }
-
-  // Legale Werte für 3er- und 4er-Pasch
-  List<int> _paschWerte(String kategorie) {
-    // Minimum: 3x1=3 (Dreierpasch) oder 4x1=4 (Viererpasch)
-    final min = kategorie == 'Dreierpasch' ? 3 : 4;
-    return [for (int i = min; i <= 30; i++) i];
   }
 
   Widget _zeile(Spieler s, String kategorie, List<int> werte,

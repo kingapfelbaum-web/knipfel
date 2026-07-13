@@ -56,51 +56,6 @@ class _SpielerSeiteState extends State<SpielerSeite>
       s.rangliste.first.profilId == profil.id)
       .length;
 
-  void _profilHinzufuegen() {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Neuer Spieler'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            maxLength: 12,
-            decoration: InputDecoration(
-              hintText: 'Name',
-              counterText: '',
-              errorText: controller.text.length == 12
-                  ? 'Maximale Länge erreicht'
-                  : null,
-            ),
-            onChanged: (_) => setDialogState(() {}),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Abbrechen')),
-            ElevatedButton(
-              onPressed: () async {
-                if (controller.text.trim().isNotEmpty) {
-                  final neuesProfil = SpielerProfil(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: controller.text.trim(),
-                  );
-                  profile.add(neuesProfil);
-                  await alleProfileSpeichern(profile);
-                  setState(() {});
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Hinzufügen'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _profilUmbenennen(SpielerProfil profil) {
     final controller = TextEditingController(text: profil.name);
     showDialog(
