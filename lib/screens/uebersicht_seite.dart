@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/spiel.dart';
 import 'spielblock_seite.dart';
 import '../models/spieler_profil.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../services/update_service.dart';
 
 class UebersichtSeite extends StatefulWidget {
   const UebersichtSeite({super.key});
@@ -15,82 +13,10 @@ class UebersichtSeite extends StatefulWidget {
 class _UebersichtSeiteState extends State<UebersichtSeite> {
   List<Spiel> spiele = [];
 
-  UpdateInfo? _updateInfo;
-
   @override
   void initState() {
     super.initState();
     _laden();
-    _updatePruefen();
-  }
-
-  Future<void> _updatePruefen() async {
-    debugPrint('Update-Check gestartet...');
-    final info = await UpdateService.pruefeAufUpdate();
-    debugPrint('UpdateInfo: ${info?.version ?? "null"}');
-    if (info != null && mounted) {
-      setState(() => _updateInfo = info);
-      _zeigeUpdateDialog(info);
-    }
-  }
-
-  void _zeigeUpdateDialog(UpdateInfo info) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: const Text('🎲 Update verfügbar'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Version ${info.version} ist verfügbar.'),
-            if (info.hinweis.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(info.hinweis,
-                  style:
-                  const TextStyle(color: Colors.grey, fontSize: 13)),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              // Version ignorieren – Dialog kommt nicht mehr
-              await UpdateService.versionsIgnorieren(info.version);
-              setState(() => _updateInfo = info);
-              Navigator.pop(context);
-            },
-            child: const Text('Ignorieren'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                final uri = Uri.parse(info.url);
-                await launchUrl(
-                  uri,
-                  mode: LaunchMode.externalApplication,
-                );
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text(
-                          'Download-Link konnte nicht geöffnet werden: $e')),
-                );
-              }
-            },
-            icon: const Icon(Icons.system_update),
-            label: const Text('Installieren'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green.shade700,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _laden() async {
@@ -398,24 +324,6 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('🎲 Knipfel'),
-        actions: [
-          if (_updateInfo != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton.icon(
-                onPressed: () => _zeigeUpdateDialog(_updateInfo!),
-                icon: const Icon(Icons.system_update,
-                    color: Colors.orange, size: 18),
-                label: const Text('Update',
-                    style: TextStyle(color: Colors.orange, fontSize: 12)),
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.orange.shade50,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
-              ),
-            ),
-        ],
       ),
       body: spiele.where((s) => !s.beendet).isEmpty
           ? const Center(
