@@ -50,7 +50,10 @@ class _HauptSeiteState extends State<HauptSeite> {
     debugPrint('UpdateInfo: ${info?.version ?? "null"}');
     if (info != null && mounted) {
       setState(() => _updateInfo = info);
-      _zeigeUpdateDialog(info);
+      // Dialog nur zeigen wenn nicht ignoriert
+      if (!info.ignoriert) {
+        _zeigeUpdateDialog(info);
+      }
     }
   }
 

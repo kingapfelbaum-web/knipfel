@@ -8,11 +8,13 @@ class UpdateInfo {
   final String version;
   final String url;
   final String hinweis;
+  final bool ignoriert;
 
   UpdateInfo({
     required this.version,
     required this.url,
     required this.hinweis,
+    this.ignoriert = false,
   });
 }
 
@@ -23,13 +25,26 @@ class UpdateService {
 
   static Future<UpdateInfo?> pruefeAufUpdate() async {
     try {
-      final response = await http
-          .get(
-        Uri.parse(
-            'https://api.github.com/repos/$_githubUser/$_githubRepo/releases/latest'),
-        headers: {'Accept': 'application/vnd.github+json'},
-      )
-          .timeout(const Duration(seconds: 5));
+      http.Response? response;
+      for (int versuch = 1; versuch <= 2; versuch++) {
+        try {
+          debugPrint('Update-Check Versuch $versuch...');
+          response = await http
+              .get(
+            Uri.parse(
+                'https://api.github.com/repos/$_githubUser/$_githubRepo/releases/latest'),
+            headers: {'Accept': 'application/vnd.github+json'},
+          )
+              .timeout(const Duration(seconds: 10));
+          break;
+        } catch (e) {
+          debugPrint('Versuch $versuch fehlgeschlagen: $e');
+          if (versuch == 2) return null;
+          await Future.delayed(const Duration(seconds: 2));
+        }
+      }
+
+      if (response == null) return null;
 
       debugPrint('Update-Check Status: ${response.statusCode}');
       debugPrint('Update-Check Body: ${response.body}');
@@ -40,11 +55,6 @@ class UpdateService {
       final neueVersion =
       (data['tag_name'] as String).replaceFirst('v', '');
       debugPrint('Neue Version: $neueVersion');
-
-      final prefs = await SharedPreferences.getInstance();
-      final ignoriertVersion = prefs.getString(_ignoriertKey);
-      debugPrint('Ignorierte Version: $ignoriertVersion');
-      if (ignoriertVersion == neueVersion) return null;
 
       final assets = data['assets'] as List;
       debugPrint('Assets: ${assets.map((a) => a['name']).toList()}');
@@ -64,13 +74,24 @@ class UpdateService {
       final aktuelleVersion = info.version;
       debugPrint('Aktuelle Version: $aktuelleVersion');
 
+      // Ignorierte Version prüfen
+      final prefs = await SharedPreferences.getInstance();
+      final ignoriertVersion = prefs.getString(_ignoriertKey);
+      debugPrint('Ignorierte Version: $ignoriertVersion');
+
+      // UpdateInfo erstellen mit ignoriert-Flag
+      final updateInfo = UpdateInfo(
+        version: neueVersion,
+        url: apkUrl,
+        hinweis: data['body'] as String? ?? '',
+        ignoriert: ignoriertVersion == neueVersion,
+      );
+
       if (_istNeuer(neueVersion, aktuelleVersion)) {
-        debugPrint('Update verfügbar!');
-        return UpdateInfo(
-          version: neueVersion,
-          url: apkUrl,
-          hinweis: data['body'] as String? ?? '',
-        );
+        debugPrint(updateInfo.ignoriert
+            ? 'Update ignoriert'
+            : 'Update verfügbar!');
+        return updateInfo;
       }
       debugPrint('Kein Update nötig');
       return null;
