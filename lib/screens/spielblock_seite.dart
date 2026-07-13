@@ -21,14 +21,15 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
   late PageController _pageController;
 
   @override
+  @override
   void initState() {
     super.initState();
-    _pageController = PageController();
-    // Ergebnis zeigen falls Spiel bereits beendet war
+    // Großen Startwert damit man in beide Richtungen wischen kann
+    final startSeite = widget.spiel.spieler.length * 500;
+    _pageController = PageController(initialPage: startSeite);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.spiel.beendet) _zeigeErgebnis();
     });
-
   }
   bool get _alleFelderBelegt =>
       widget.spiel.spieler.every((s) => s.istFertig);
@@ -71,9 +72,8 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
   void _zumNaechstenSpieler() {
     if (widget.spiel.spieler.length <= 1) return;
     final aktuell = _pageController.page?.round() ?? 0;
-    final naechster = (aktuell + 1) % widget.spiel.spieler.length;
     _pageController.animateToPage(
-      naechster,
+      aktuell + 1,
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
     );
@@ -831,8 +831,12 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
       body: PageView.builder(
         controller: _pageController,
         itemCount: spiel.spieler.length,
+        allowImplicitScrolling: true,
+        physics: const PageScrollPhysics(),
         itemBuilder: (context, index) {
-          final s = spiel.spieler[index];
+          // Endlos-Wrap: index modulo Spieleranzahl
+          final i = index % spiel.spieler.length;
+          final s = spiel.spieler[i];
           return Column(
             children: [
               Container(
@@ -840,7 +844,7 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
                 color: Colors.green.shade700,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  '${s.name}  (${index + 1}/${spiel.spieler.length})',
+                  '${s.name}  (${i + 1}/${spiel.spieler.length})',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold),
