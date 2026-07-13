@@ -58,7 +58,7 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
             onPressed: () async {
               // Version ignorieren – Dialog kommt nicht mehr
               await UpdateService.versionsIgnorieren(info.version);
-              setState(() => _updateInfo = null);
+              setState(() => _updateInfo = info);
               Navigator.pop(context);
             },
             child: const Text('Ignorieren'),
