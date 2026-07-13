@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/spiel.dart';
 import 'spielblock_seite.dart';
-import 'dart:math';
 import '../models/spieler_profil.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/update_service.dart';
@@ -26,7 +25,9 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
   }
 
   Future<void> _updatePruefen() async {
+    debugPrint('Update-Check gestartet...');
     final info = await UpdateService.pruefeAufUpdate();
+    debugPrint('UpdateInfo: ${info?.version ?? "null"}');
     if (info != null && mounted) {
       setState(() => _updateInfo = info);
       _zeigeUpdateDialog(info);

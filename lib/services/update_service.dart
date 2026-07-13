@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -30,38 +31,51 @@ class UpdateService {
       )
           .timeout(const Duration(seconds: 5));
 
+      debugPrint('Update-Check Status: ${response.statusCode}');
+      debugPrint('Update-Check Body: ${response.body}');
+
       if (response.statusCode != 200) return null;
 
       final data = jsonDecode(response.body);
       final neueVersion =
       (data['tag_name'] as String).replaceFirst('v', '');
-      final hinweis = data['body'] as String? ?? '';
+      debugPrint('Neue Version: $neueVersion');
 
-      // Prüfen ob diese Version bereits ignoriert wurde
       final prefs = await SharedPreferences.getInstance();
       final ignoriertVersion = prefs.getString(_ignoriertKey);
+      debugPrint('Ignorierte Version: $ignoriertVersion');
       if (ignoriertVersion == neueVersion) return null;
 
       final assets = data['assets'] as List;
+      debugPrint('Assets: ${assets.map((a) => a['name']).toList()}');
+
       final apkAsset = assets.firstWhere(
             (a) => (a['name'] as String).endsWith('.apk'),
         orElse: () => null,
       );
-      if (apkAsset == null) return null;
+      if (apkAsset == null) {
+        debugPrint('Keine APK gefunden');
+        return null;
+      }
       final apkUrl = apkAsset['browser_download_url'] as String;
+      debugPrint('APK URL: $apkUrl');
 
       final info = await PackageInfo.fromPlatform();
       final aktuelleVersion = info.version;
+      debugPrint('Aktuelle Version: $aktuelleVersion');
 
       if (_istNeuer(neueVersion, aktuelleVersion)) {
+        debugPrint('Update verfügbar!');
         return UpdateInfo(
           version: neueVersion,
           url: apkUrl,
-          hinweis: hinweis,
+          hinweis: data['body'] as String? ?? '',
         );
       }
+      debugPrint('Kein Update nötig');
       return null;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Update-Check Fehler: $e');
       return null;
     }
   }
