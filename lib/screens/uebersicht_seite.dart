@@ -397,7 +397,7 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🎲 Kniffel'),
+        title: const Text('🎲 Knipfel'),
         actions: [
           if (_updateInfo != null)
             Padding(
