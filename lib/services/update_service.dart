@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UpdateInfo {
   final String version;
@@ -15,9 +16,9 @@ class UpdateInfo {
 }
 
 class UpdateService {
-  // ← Dein GitHub-Benutzername und Repository-Name:
-  static const String _githubUser = 'kingapfelbaum-web';
-  static const String _githubRepo = 'knipfel';
+  static const String _githubUser = 'DEIN_USERNAME';
+  static const String _githubRepo = 'DEIN_REPO';
+  static const String _ignoriertKey = 'ignorierte_version';
 
   static Future<UpdateInfo?> pruefeAufUpdate() async {
     try {
@@ -32,13 +33,15 @@ class UpdateService {
       if (response.statusCode != 200) return null;
 
       final data = jsonDecode(response.body);
-
-      // Version aus Tag-Name lesen (z.B. "v1.0.1" → "1.0.1")
       final neueVersion =
       (data['tag_name'] as String).replaceFirst('v', '');
       final hinweis = data['body'] as String? ?? '';
 
-      // APK-Asset-URL finden
+      // Prüfen ob diese Version bereits ignoriert wurde
+      final prefs = await SharedPreferences.getInstance();
+      final ignoriertVersion = prefs.getString(_ignoriertKey);
+      if (ignoriertVersion == neueVersion) return null;
+
       final assets = data['assets'] as List;
       final apkAsset = assets.firstWhere(
             (a) => (a['name'] as String).endsWith('.apk'),
@@ -47,7 +50,6 @@ class UpdateService {
       if (apkAsset == null) return null;
       final apkUrl = apkAsset['browser_download_url'] as String;
 
-      // Mit installierter Version vergleichen
       final info = await PackageInfo.fromPlatform();
       final aktuelleVersion = info.version;
 
@@ -62,6 +64,11 @@ class UpdateService {
     } catch (_) {
       return null;
     }
+  }
+
+  static Future<void> versionsIgnorieren(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_ignoriertKey, version);
   }
 
   static bool _istNeuer(String neu, String aktuell) {

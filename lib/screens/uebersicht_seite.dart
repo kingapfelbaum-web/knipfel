@@ -47,22 +47,37 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
             if (info.hinweis.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(info.hinweis,
-                  style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                  style:
+                  const TextStyle(color: Colors.grey, fontSize: 13)),
             ],
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              // Version ignorieren – Dialog kommt nicht mehr
+              await UpdateService.versionsIgnorieren(info.version);
+              setState(() => _updateInfo = null);
+              Navigator.pop(context);
+            },
             child: const Text('Ignorieren'),
           ),
           ElevatedButton.icon(
             onPressed: () async {
               Navigator.pop(context);
-              final uri = Uri.parse(info.url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri,
-                    mode: LaunchMode.externalApplication);
+              try {
+                final uri = Uri.parse(info.url);
+                await launchUrl(
+                  uri,
+                  mode: LaunchMode.externalApplication,
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text(
+                          'Download-Link konnte nicht geöffnet werden: $e')),
+                );
               }
             },
             icon: const Icon(Icons.system_update),
