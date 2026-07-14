@@ -46,11 +46,6 @@ class _HauptSeiteState extends State<HauptSeite> {
   int _tabIndex = 0;
   UpdateInfo? _updateInfo;
 
-  final List<Widget> _seiten = const [
-    UebersichtSeite(),
-    SpielerSeite(),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -127,47 +122,35 @@ class _HauptSeiteState extends State<HauptSeite> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _updateInfo != null
-          ? AppBar(
-        title: const Text('🎲 Kniffel'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: TextButton.icon(
-              onPressed: () => _zeigeUpdateDialog(_updateInfo!),
-              icon: const Icon(Icons.system_update,
-                  color: Colors.orange, size: 18),
-              label: const Text('Update',
-                  style: TextStyle(
-                      color: Colors.orange, fontSize: 12)),
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.orange.shade50,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
-              ),
+      body: IndexedStack(
+        index: _tabIndex,
+        children: [
+          UebersichtSeite(updateInfo: _updateInfo, onUpdateTap: () {
+            if (_updateInfo != null) _zeigeUpdateDialog(_updateInfo!);
+          }),
+          const SpielerSeite(),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: NavigationBar(
+          selectedIndex: _tabIndex,
+          onDestinationSelected: (i) => setState(() => _tabIndex = i),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.casino_outlined),
+              selectedIcon: Icon(Icons.casino),
+              label: 'Spiele',
             ),
-          ),
-        ],
-      )
-          : null,
-      body: _seiten[_tabIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tabIndex,
-        onDestinationSelected: (i) => setState(() => _tabIndex = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.casino_outlined),
-            selectedIcon: Icon(Icons.casino),
-            label: 'Spiele',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Statistiken',
-          ),
-        ],
+            NavigationDestination(
+              icon: Icon(Icons.bar_chart_outlined),
+              selectedIcon: Icon(Icons.bar_chart),
+              label: 'Statistiken',
+            ),
+          ],
+        ),
       ),
     );
   }
