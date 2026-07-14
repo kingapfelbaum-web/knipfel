@@ -309,6 +309,7 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
                 ],
               ),
               const SizedBox(height: 8),
+              Divider(height: MediaQuery.of(context).padding.bottom),
             ],
           ),
         ),

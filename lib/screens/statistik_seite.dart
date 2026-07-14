@@ -108,6 +108,7 @@ class StatistikSeite extends StatelessWidget {
               k,
               kategorieSchnitt[k],
               (untereWerte[k]?.last ?? 30).toDouble())),
+          Divider(height: MediaQuery.of(context).padding.bottom),
         ],
       ),
     );

@@ -238,6 +238,7 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
                 ],
               ),
               const SizedBox(height: 8),
+              Divider(height: MediaQuery.of(context).padding.bottom),
             ],
           ),
         ),
