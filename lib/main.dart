@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'screens/uebersicht_seite.dart';
 import 'screens/spieler_seite.dart';
 import 'services/update_service.dart';
@@ -6,7 +7,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const KniffelApp());
+  SystemChrome.setPreferredOrientations(
+    [
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ],
+  ).then((val) {
+    runApp(const KniffelApp());
+  });
 }
 
 class KniffelApp extends StatelessWidget {
@@ -17,6 +25,11 @@ class KniffelApp extends StatelessWidget {
     return MaterialApp(
       title: 'Kniffel',
       theme: ThemeData(colorSchemeSeed: Colors.green, useMaterial3: true),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.tealAccent.shade700, brightness: Brightness.dark),
+        useMaterial3: true
+      ),
+      themeMode: ThemeMode.system,
       home: const HauptSeite(),
     );
   }

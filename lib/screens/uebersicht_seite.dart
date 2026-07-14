@@ -101,7 +101,7 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
                         dense: true,
                         leading: CircleAvatar(
                           radius: 14,
-                          backgroundColor: Colors.green.shade100,
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                           child: Text(p.name[0].toUpperCase(),
                               style: const TextStyle(fontSize: 12)),
                         ),
@@ -178,7 +178,7 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
                         }),
                         secondary: CircleAvatar(
                           radius: 14,
-                          backgroundColor: Colors.green.shade100,
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                           child: Text(p.name[0].toUpperCase(),
                               style: const TextStyle(
                                   fontSize: 12,
@@ -356,8 +356,8 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: spiel.beendet
-                            ? Colors.green.shade100
-                            : Colors.orange.shade100,
+                            ? Theme.of(context).colorScheme.primaryContainer
+                            : Theme.of(context).colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -365,8 +365,8 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
                         style: TextStyle(
                           fontSize: 11,
                           color: spiel.beendet
-                              ? Colors.green.shade800
-                              : Colors.orange.shade800,
+                              ? Theme.of(context).colorScheme.onPrimaryContainer
+                              : Theme.of(context).colorScheme.onSecondaryContainer,
                         ),
                       ),
                     ),

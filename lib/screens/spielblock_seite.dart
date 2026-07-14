@@ -60,8 +60,8 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
             icon: const Icon(Icons.flag),
             label: const Text('Spiel beenden'),
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.shade700,
-                foregroundColor: Colors.white),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary),
           ),
         ],
       ),
@@ -244,7 +244,7 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
                         }),
                         secondary: CircleAvatar(
                           radius: 14,
-                          backgroundColor: Colors.green.shade100,
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                           child: Text(p.name[0].toUpperCase(),
                               style: const TextStyle(
                                   fontSize: 12,
@@ -282,7 +282,7 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
                       dense: true,
                       leading: CircleAvatar(
                         radius: 14,
-                        backgroundColor: Colors.green.shade100,
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                         child: Text(e.value.name[0].toUpperCase(),
                             style: const TextStyle(fontSize: 12)),
                       ),
@@ -390,7 +390,7 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text(kategorie),
-        content: Text('Hast du $kategorie gewürfelt?'),
+        content: Text('$kategorie gewürfelt?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
@@ -648,7 +648,7 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
 
   Widget _summenZeile(String label, int wert, {bool fett = false}) {
     return Container(
-      color: Colors.green.shade50,
+      color: Theme.of(context).colorScheme.primaryContainer,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -695,10 +695,10 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
                 label: const Text('Beenden'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _alleFelderBelegt
-                      ? Colors.green.shade700
+                      ? Theme.of(context).colorScheme.primary
                       : Colors.grey.shade300,
                   foregroundColor: _alleFelderBelegt
-                      ? Colors.white
+                      ? Theme.of(context).colorScheme.onPrimary
                       : Colors.grey.shade500,
                 ),
               ),
@@ -710,7 +710,7 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
             spiel.beendet
                 ? '🔒 Spiel beendet – nur Ansicht'
                 : '← wischen zum Wechseln →',
-            style: TextStyle(color: Colors.green.shade100, fontSize: 12),
+            style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 12),
           ),
         ),
       ),
@@ -723,13 +723,13 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
             children: [
               Container(
                 width: double.infinity,
-                color: Colors.green.shade700,
+                color: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   '${s.name}  (${i + 1}/${widget.spiel.spieler.length})',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
                 ),
               ),
               Expanded(child: _spielerBlock(s)),
