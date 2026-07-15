@@ -99,8 +99,13 @@ class _HauptSeiteState extends State<HauptSeite> {
               try {
                 final uri = Uri.parse(info.url);
                 await launchUrl(uri,
-                    mode: LaunchMode.externalApplication);
+                    mode: LaunchMode.externalNonBrowserApplication);
               } catch (e) {
+                try {
+                  await launchUrl(Uri.parse(info.url), mode: LaunchMode.externalApplication);
+                } catch (e) {
+                  debugPrint('Download-Link konnte nicht geöffnet werden: $e');
+                }
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
