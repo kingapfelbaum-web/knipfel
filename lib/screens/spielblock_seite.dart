@@ -19,10 +19,12 @@ class SpielblockSeite extends StatefulWidget {
 
 class _SpielblockSeiteState extends State<SpielblockSeite> {
   late PageController _pageController;
+  late int _index;
 
   @override
   void initState() {
     super.initState();
+    _index = 0;
     // Großen Mittelwert damit in beide Richtungen gewischt werden kann
     final mitte = 500 * widget.spiel.spieler.length;
     _pageController = PageController(initialPage: mitte);
@@ -588,9 +590,8 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
             _zeile(s, 'Chance', [], onTap: () =>
                 _zeigeFreitextDialog(s, 'Chance', 5, 30)),
             const Divider(),
-            _summenZeile('GESAMTPUNKTE', s.gesamt, fett: true),
-            const SizedBox(height: 8),
-            Divider(height: MediaQuery.of(context).padding.bottom),
+            _summenZeile('Summe oben', s.oberesSumme),
+            _summenZeile('Summe unten', s.untereSumme),
           ]),
         ),
       ],
@@ -658,12 +659,13 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
           Text(label,
               style: TextStyle(
                   fontWeight: fett ? FontWeight.bold : FontWeight.normal,
-                  fontSize: fett ? 16 : 14)),
+                  fontSize: fett ? 16 : 14,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer)),
           Text('$wert',
               style: TextStyle(
                   fontWeight: fett ? FontWeight.bold : FontWeight.normal,
                   fontSize: fett ? 16 : 14,
-                  color: Colors.green.shade800)),
+                  color: Theme.of(context).colorScheme.onPrimaryContainer)),
         ],
       ),
     );
@@ -716,28 +718,73 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
           ),
         ),
       ),
-      body: PageView.builder(
-        controller: _pageController,
-        itemBuilder: (context, index) {
-          final i = index % widget.spiel.spieler.length;
-          final s = widget.spiel.spieler[i];
-          return Column(
-            children: [
-              Container(
-                width: double.infinity,
-                color: Theme.of(context).colorScheme.primary,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  '${s.name}  (${i + 1}/${widget.spiel.spieler.length})',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
-                ),
+      body: Column(
+        children: [
+          // Spieler-Name oben
+          Builder(builder: (context) {
+            final page = _pageController.hasClients
+                ? (_pageController.page?.round() ?? 0)
+                : 0;
+            final i = page % widget.spiel.spieler.length;
+            final s = widget.spiel.spieler[i];
+            return Container(
+              width: double.infinity,
+              color: Theme.of(context).colorScheme.primaryContainer,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                '${s.name}  (${i + 1}/${widget.spiel.spieler.length})',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
               ),
-              Expanded(child: _spielerBlock(s)),
-            ],
-          );
-        },
+            );
+          }),
+
+          // Seiteninhalt
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (_) => setState(() {}),
+              itemBuilder: (context, index) {
+                final i = index % widget.spiel.spieler.length;
+                final s = widget.spiel.spieler[i];
+                return _spielerBlock(s);
+              },
+            ),
+          ),
+
+          // Gesamtpunkte aller Spieler unten
+          // Gesamtpunkte nur für aktuellen Spieler
+          Container(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: SafeArea(
+              top: false,
+              child: Builder(builder: (context) {
+                final page = _pageController.hasClients
+                    ? (_pageController.page?.round() ?? 0)
+                    : 0;
+                final i = page % widget.spiel.spieler.length;
+                final s = widget.spiel.spieler[i];
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('GESAMTPUNKTE',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer)),
+                    Text('${s.gesamt}',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer)),
+                  ],
+                );
+              }),
+            ),
+          ),
+        ],
       ),
     );
   }
