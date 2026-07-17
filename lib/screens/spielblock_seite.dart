@@ -19,12 +19,10 @@ class SpielblockSeite extends StatefulWidget {
 
 class _SpielblockSeiteState extends State<SpielblockSeite> {
   late PageController _pageController;
-  late int _index;
 
   @override
   void initState() {
     super.initState();
-    _index = 0;
     // Großen Mittelwert damit in beide Richtungen gewischt werden kann
     final mitte = 500 * widget.spiel.spieler.length;
     _pageController = PageController(initialPage: mitte);

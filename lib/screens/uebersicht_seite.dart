@@ -435,14 +435,31 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
                           : Column(
                         crossAxisAlignment:
                         CrossAxisAlignment.start,
-                        children: spiel.spieler
-                            .map((s) => Text(
-                          '👤 ${s.name}',
-                          style:
-                          const TextStyle(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ))
-                            .toList(),
+                        children: [
+                          ...spiel.spieler
+                              .take(4)
+                              .toList()
+                              .asMap()
+                              .entries
+                              .map((e) => Text(
+                            '👤 ${e.value.name}: ${e.value.gesamt}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: e.key == 0
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            overflow:
+                            TextOverflow.ellipsis,
+                          )),
+                          if (spiel.rangliste.length > 4)
+                            Text(
+                              '+ ${spiel.rangliste.length - 4} weitere',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey),
+                            ),
+                        ],
                       ),
                     ),
                   ],
