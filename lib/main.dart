@@ -4,6 +4,7 @@ import 'screens/uebersicht_seite.dart';
 import 'screens/spieler_seite.dart';
 import 'services/update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -100,6 +101,8 @@ class _HauptSeiteState extends State<HauptSeite> {
                 final uri = Uri.parse(info.url);
                 await launchUrl(uri,
                     mode: LaunchMode.externalNonBrowserApplication);
+                await Future.delayed(const Duration(milliseconds: 500));
+                exit(0);
               } catch (e) {
                 try {
                   await launchUrl(Uri.parse(info.url), mode: LaunchMode.externalApplication);
