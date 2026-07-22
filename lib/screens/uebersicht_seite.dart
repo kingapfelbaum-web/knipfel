@@ -111,7 +111,7 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
                           radius: 14,
                           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                           child: Text(p.name[0].toUpperCase(),
-                              style: const TextStyle(fontSize: 12)),
+                              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onPrimaryContainer)),
                         ),
                         title: Text(p.name),
                         trailing: const Icon(Icons.drag_handle),
@@ -470,7 +470,7 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
         },
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(bottom: 0),
         child: FloatingActionButton.extended(
           onPressed: _neuesSpiel,
           icon: const Icon(Icons.add),

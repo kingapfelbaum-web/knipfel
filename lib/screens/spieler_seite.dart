@@ -4,6 +4,7 @@ import '../models/spiel.dart';
 import 'statistik_seite.dart';
 import 'spielblock_seite.dart';
 import 'vergleich_seite.dart';
+import 'export_seite.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 
@@ -379,11 +380,13 @@ class _SpielerSeiteState extends State<SpielerSeite>
                         }),
                         secondary: CircleAvatar(
                           radius: 14,
-                          backgroundColor: Colors.green.shade100,
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                           child: Text(p.name[0].toUpperCase(),
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold)),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer
+                              )),
                         ),
                         title: Text(p.name),
                       ))
@@ -806,7 +809,15 @@ class _SpielerSeiteState extends State<SpielerSeite>
           IconButton(
             icon: const Icon(Icons.upload_file),
             tooltip: 'Exportieren',
-            onPressed: _exportieren,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ExportSeite(
+                  profile: profile,
+                  spiele: spiele,
+                ),
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.download),
@@ -828,6 +839,27 @@ class _SpielerSeiteState extends State<SpielerSeite>
           _spielerListe(),
           _spieleListe(),
         ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: ListenableBuilder(
+        listenable: _tabController,
+        builder: (context, _) {
+          if (_tabController.index == 0) {
+            return Column(
+              mainAxisSize: .min,
+              children: [
+                if (profile.length >= 2)
+                  FloatingActionButton.extended(
+                    heroTag: 'vergleich',
+                    onPressed: _zeigeVergleichsAuswahl,
+                    icon: const Icon(Icons.compare_arrows),
+                    label: const Text('Vergleich'),
+                  ),
+              ],
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -864,10 +896,10 @@ class _SpielerSeiteState extends State<SpielerSeite>
               final spielAnzahl = _anzahlSpiele(p);
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.green.shade200,
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                   child: Text(p.name[0].toUpperCase(),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimaryContainer)),
                 ),
                 title: Text(p.name,
                     style: const TextStyle(
@@ -908,12 +940,6 @@ class _SpielerSeiteState extends State<SpielerSeite>
             },
           ),
         ),
-        if (_tabController.index == 0 && profile.length >= 2)
-          IconButton(
-            icon: const Icon(Icons.compare_arrows),
-            tooltip: 'Spieler vergleichen',
-            onPressed: _zeigeVergleichsAuswahl,
-          ),
       ],
     );
   }
