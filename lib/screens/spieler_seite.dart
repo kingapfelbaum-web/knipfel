@@ -3,6 +3,7 @@ import '../models/spieler_profil.dart';
 import '../models/spiel.dart';
 import 'statistik_seite.dart';
 import 'spielblock_seite.dart';
+import 'vergleich_seite.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 
@@ -163,6 +164,132 @@ class _SpielerSeiteState extends State<SpielerSeite>
             const Text('Löschen', style: TextStyle(color: Colors.white)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _zeigeVergleichsAuswahl() {
+    Set<String> ausgewaehlt = {};
+    final suchController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Spieler vergleichen',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text('Mindestens 2 Spieler auswählen:',
+                  style: TextStyle(color: Colors.grey, fontSize: 13)),
+              TextField(
+                controller: suchController,
+                decoration: const InputDecoration(
+                  hintText: 'Spieler suchen...',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (_) => setDialogState(() {}),
+              ),
+              const SizedBox(height: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: SingleChildScrollView(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: profile
+                          .where((p) =>
+                      suchController.text.trim().isEmpty ||
+                          p.name.toLowerCase().contains(
+                              suchController.text.trim().toLowerCase()))
+                          .map((p) => CheckboxListTile(
+                        dense: true,
+                        value: ausgewaehlt.contains(p.id),
+                        onChanged: (val) => setDialogState(() {
+                          if (val == true) {
+                            ausgewaehlt.add(p.id);
+                            suchController.clear();
+                          } else {
+                            ausgewaehlt.remove(p.id);
+                          }
+                        }),
+                        secondary: CircleAvatar(
+                          radius: 14,
+                          backgroundColor: Colors.green.shade100,
+                          child: Text(p.name[0].toUpperCase(),
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                        title: Text(p.name),
+                      ))
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: ausgewaehlt.length < 2
+                        ? null
+                        : () {
+                      final ausgewaehlteProfile = profile
+                          .where((p) => ausgewaehlt.contains(p.id))
+                          .toList();
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => VergleichSeite(
+                            profile: ausgewaehlteProfile,
+                            spiele: spiele,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.compare_arrows),
+                    label: Text('Vergleichen (${ausgewaehlt.length})'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Divider(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -781,6 +908,12 @@ class _SpielerSeiteState extends State<SpielerSeite>
             },
           ),
         ),
+        if (_tabController.index == 0 && profile.length >= 2)
+          IconButton(
+            icon: const Icon(Icons.compare_arrows),
+            tooltip: 'Spieler vergleichen',
+            onPressed: _zeigeVergleichsAuswahl,
+          ),
       ],
     );
   }
