@@ -120,8 +120,8 @@ class _HauptSeiteState extends State<HauptSeite> {
             icon: const Icon(Icons.system_update),
             label: const Text('Installieren'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green.shade700,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
         ],
@@ -139,7 +139,7 @@ class _HauptSeiteState extends State<HauptSeite> {
           UebersichtSeite(updateInfo: _updateInfo, onUpdateTap: () {
             if (_updateInfo != null) _zeigeUpdateDialog(_updateInfo!);
           }),
-          const SpielerSeite(),
+          SpielerSeite(key: ValueKey(_tabIndex ==1)),
         ],
       ),
       bottomNavigationBar: SafeArea(

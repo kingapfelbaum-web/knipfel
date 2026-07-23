@@ -339,13 +339,13 @@ class _UebersichtSeiteState extends State<UebersichtSeite> {
               padding: const EdgeInsets.only(right: 8),
               child: TextButton.icon(
                 onPressed: widget.onUpdateTap,
-                icon: const Icon(Icons.system_update,
-                    color: Colors.orange, size: 18),
-                label: const Text('Update',
+                icon: Icon(Icons.system_update,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer, size: 18),
+                label: Text('Update',
                     style: TextStyle(
-                        color: Colors.orange, fontSize: 12)),
+                        color: Theme.of(context).colorScheme.onPrimaryContainer, fontSize: 12)),
                 style: TextButton.styleFrom(
-                  backgroundColor: Colors.orange.shade50,
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 4),
                 ),

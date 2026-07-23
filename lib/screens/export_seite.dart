@@ -115,9 +115,9 @@ class _ExportSeiteState extends State<ExportSeite> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: exportierbar
                     ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.primary,
+                    : Theme.of(context).colorScheme.error,
                 foregroundColor:
-                exportierbar ? Theme.of(context).colorScheme.onPrimary : Colors.grey.shade500,
+                exportierbar ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onError,
                 padding: const EdgeInsets.symmetric(
                     horizontal: 10, vertical: 6),
               ),

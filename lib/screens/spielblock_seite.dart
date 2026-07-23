@@ -19,6 +19,7 @@ class SpielblockSeite extends StatefulWidget {
 
 class _SpielblockSeiteState extends State<SpielblockSeite> {
   late PageController _pageController;
+  bool _wurdeGeradeBeendet = false;
 
   @override
   void initState() {
@@ -53,6 +54,7 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
           ElevatedButton.icon(
             onPressed: () {
               widget.spiel.beendet = true;
+              setState(() => _wurdeGeradeBeendet = true);
               widget.onChanged();
               Navigator.pop(context);
               _zeigeErgebnis();
@@ -87,6 +89,7 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
 
   void _zeigeErgebnis() {
     final rangliste = widget.spiel.rangliste;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -121,7 +124,10 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              if (_wurdeGeradeBeendet) Navigator.pop(context);
+            },
             child: const Text('Schließen'),
           ),
         ],
@@ -692,7 +698,8 @@ class _SpielblockSeiteState extends State<SpielblockSeite> {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: ElevatedButton.icon(
-                onPressed: _alleFelderBelegt ? _spielBeenden : null,
+                onPressed: _spielBeenden,
+      //          onPressed: _alleFelderBelegt ? _spielBeenden : null,
                 icon: const Icon(Icons.flag, size: 18),
                 label: const Text('Beenden'),
                 style: ElevatedButton.styleFrom(

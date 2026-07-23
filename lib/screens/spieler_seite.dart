@@ -28,6 +28,11 @@ class _SpielerSeiteState extends State<SpielerSeite>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _laden();
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        _laden();
+      }
+    });
   }
 
   @override
@@ -205,8 +210,11 @@ class _SpielerSeiteState extends State<SpielerSeite>
                 ],
               ),
               const SizedBox(height: 8),
-              const Text('Mindestens 2 Spieler auswählen:',
-                  style: TextStyle(color: Colors.grey, fontSize: 13)),
+              ausgewaehlt.length>=5
+                ? Text('Maximal 5 Spieler möglich:',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13))
+                : Text('Mindestens 2 Spieler auswählen:',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
               TextField(
                 controller: suchController,
                 decoration: const InputDecoration(
@@ -236,8 +244,19 @@ class _SpielerSeiteState extends State<SpielerSeite>
                           .map((p) => CheckboxListTile(
                         dense: true,
                         value: ausgewaehlt.contains(p.id),
-                        onChanged: (val) => setDialogState(() {
+                        onChanged: ausgewaehlt.length >= 5 && !ausgewaehlt.contains(p.id)
+                          ? null
+                          : (val) => setDialogState(() {
                           if (val == true) {
+                              if (ausgewaehlt.length >= 5) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Maximal 5 Spieler möglich'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                return;
+                              }
                             ausgewaehlt.add(p.id);
                             suchController.clear();
                           } else {
@@ -246,11 +265,13 @@ class _SpielerSeiteState extends State<SpielerSeite>
                         }),
                         secondary: CircleAvatar(
                           radius: 14,
-                          backgroundColor: Colors.green.shade100,
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                           child: Text(p.name[0].toUpperCase(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 12,
-                                  fontWeight: FontWeight.bold)),
+                                  fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer
+                              )),
                         ),
                         title: Text(p.name),
                       ))
